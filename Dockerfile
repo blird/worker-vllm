@@ -15,17 +15,7 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 RUN python3 -m pip install vllm==0.11.0
 
 # Patch DisabledTqdm to handle huggingface_hub>=0.25 passing disable= in kwargs
-RUN python3 -c "\
-path = '/usr/local/lib/python3.10/dist-packages/vllm/model_executor/model_loader/weight_utils.py'
-with open(path, 'r') as f:
-    content = f.read()
-old = '    def __init__(self, *args, **kwargs):\n        super().__init__(*args, **kwargs, disable=True)'
-new = '    def __init__(self, *args, **kwargs):\n        kwargs.pop(\"disable\", None)\n        super().__init__(*args, **kwargs, disable=True)'
-content = content.replace(old, new)
-with open(path, 'w') as f:
-    f.write(content)
-print('Patched DisabledTqdm')
-"
+RUN python3 -c "path='/usr/local/lib/python3.10/dist-packages/vllm/model_executor/model_loader/weight_utils.py'; content=open(path).read(); content=content.replace('    def __init__(self, *args, **kwargs):\n        super().__init__(*args, **kwargs, disable=True)', '    def __init__(self, *args, **kwargs):\n        kwargs.pop(\"disable\", None)\n        super().__init__(*args, **kwargs, disable=True)'); open(path,'w').write(content); print('Patched DisabledTqdm')"
 
 # Setup for Option 2: Building the Image with the Model included
 ARG MODEL_NAME=""
