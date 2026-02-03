@@ -15,43 +15,10 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 RUN python3 -m pip install vllm==0.11.0
 
 # Patch 1: DisabledTqdm to handle huggingface_hub>=0.25 passing disable= in kwargs
-RUN python3 -c "\
-path = '/usr/local/lib/python3.10/dist-packages/vllm/model_executor/model_loader/weight_utils.py'
-with open(path, 'r') as f:
-    content = f.read()
-old = '    def __init__(self, *args, **kwargs):\n        super().__init__(*args, **kwargs, disable=True)'
-new = '    def __init__(self, *args, **kwargs):\n        kwargs.pop(\"disable\", None)\n        super().__init__(*args, **kwargs, disable=True)'
-if old in content:
-    content = content.replace(old, new)
-    with open(path, 'w') as f:
-        f.write(content)
-    print('Patched DisabledTqdm')
-else:
-    print('DisabledTqdm patch target not found - may already be patched')
-"
+RUN python3 -c "p='/usr/local/lib/python3.10/dist-packages/vllm/model_executor/model_loader/weight_utils.py'; c=open(p).read(); o='    def __init__(self, *args, **kwargs):\n        super().__init__(*args, **kwargs, disable=True)'; n='    def __init__(self, *args, **kwargs):\n        kwargs.pop(\"disable\", None)\n        super().__init__(*args, **kwargs, disable=True)'; open(p,'w').write(c.replace(o,n)) if o in c else None; print('Patched DisabledTqdm' if o in c else 'DisabledTqdm already patched')"
 
 # Patch 2: get_cached_tokenizer to skip caching for MistralTokenizer (missing all_special_tokens_extended)
-RUN python3 -c "\
-path = '/usr/local/lib/python3.10/dist-packages/vllm/transformers_utils/tokenizer.py'
-with open(path, 'r') as f:
-    content = f.read()
-
-# Add early return for tokenizers without all_special_tokens_extended
-old_line = '    cached_tokenizer = copy.copy(tokenizer)'
-new_lines = '''    # Skip caching for tokenizers without standard HF attributes (e.g., MistralTokenizer)
-    if not hasattr(tokenizer, 'all_special_tokens_extended'):
-        return tokenizer
-    
-    cached_tokenizer = copy.copy(tokenizer)'''
-
-if old_line in content and 'Skip caching for tokenizers' not in content:
-    content = content.replace(old_line, new_lines, 1)
-    with open(path, 'w') as f:
-        f.write(content)
-    print('Patched get_cached_tokenizer')
-else:
-    print('get_cached_tokenizer patch target not found or already patched')
-"
+RUN python3 -c "p='/usr/local/lib/python3.10/dist-packages/vllm/transformers_utils/tokenizer.py'; c=open(p).read(); o='    cached_tokenizer = copy.copy(tokenizer)'; n='    # Skip caching for tokenizers without standard HF attributes (e.g., MistralTokenizer)\n    if not hasattr(tokenizer, \"all_special_tokens_extended\"):\n        return tokenizer\n    cached_tokenizer = copy.copy(tokenizer)'; open(p,'w').write(c.replace(o,n,1)) if o in c and 'all_special_tokens_extended' not in c else None; print('Patched get_cached_tokenizer' if o in c else 'get_cached_tokenizer already patched')"
 
 # Setup for Option 2: Building the Image with the Model included
 ARG MODEL_NAME=""
