@@ -14,6 +14,28 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 # Install vLLM
 RUN python3 -m pip install vllm==0.11.0
 
+# Patch DisabledTqdm to handle huggingface_hub>=0.25 passing disable= in kwargs
+RUN python3 << 'EOF'
+path = '/usr/local/lib/python3.10/dist-packages/vllm/model_executor/model_loader/weight_utils.py'
+with open(path, 'r') as f:
+    content = f.read()
+
+old = '''    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs, disable=True)'''
+
+new = '''    def __init__(self, *args, **kwargs):
+        kwargs.pop('disable', None)
+        super().__init__(*args, **kwargs, disable=True)'''
+
+if old in content:
+    content = content.replace(old, new)
+    with open(path, 'w') as f:
+        f.write(content)
+    print('✓ Patched DisabledTqdm')
+else:
+    print('⚠ Pattern not found - may already be patched or vLLM version changed')
+EOF
+
 # Setup for Option 2: Building the Image with the Model included
 ARG MODEL_NAME=""
 ARG TOKENIZER_NAME=""
