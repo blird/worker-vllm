@@ -214,7 +214,6 @@ class OpenAIvLLMEngine(vLLMEngine):
 
         self.serving_models = OpenAIServingModels(
             engine_client=self.llm,
-            model_config=self.model_config,
             base_model_paths=self.base_model_paths,
             lora_modules=self.lora_adapters,
         )
@@ -226,26 +225,21 @@ class OpenAIvLLMEngine(vLLMEngine):
             chat_template = self.tokenizer.tokenizer.chat_template
         
         self.chat_engine = OpenAIServingChat(
-            engine_client=self.llm, 
-            model_config=self.model_config,
+            engine_client=self.llm,
             models=self.serving_models,
             response_role=self.response_role,
             request_logger=None,
             chat_template=chat_template,
             chat_template_content_format="auto",
-            # enable_reasoning=os.getenv('ENABLE_REASONING', 'false').lower() == 'true',
-            reasoning_parser= os.getenv('REASONING_PARSER', "") or None,
-            # return_token_as_token_ids=False,
+            reasoning_parser=os.getenv('REASONING_PARSER', "") or None,
             enable_auto_tools=os.getenv('ENABLE_AUTO_TOOL_CHOICE', 'false').lower() == 'true',
             tool_parser=os.getenv('TOOL_CALL_PARSER', "") or None,
             enable_prompt_tokens_details=False
         )
         self.completion_engine = OpenAIServingCompletion(
-            engine_client=self.llm, 
-            model_config=self.model_config,
+            engine_client=self.llm,
             models=self.serving_models,
             request_logger=None,
-            # return_token_as_token_ids=False,
         )
     
     async def generate(self, openai_request: JobInput):
