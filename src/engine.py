@@ -180,18 +180,20 @@ class OpenAIvLLMEngine(vLLMEngine):
         self.served_model_name = os.getenv("OPENAI_SERVED_MODEL_NAME_OVERRIDE") or self.engine_args.model
         self.response_role = os.getenv("OPENAI_RESPONSE_ROLE") or "assistant"
         self.lora_adapters = self._load_lora_adapters()
-        # Run async initialization in a separate thread to avoid RunPod event loop conflicts
-        # RunPod's event loop is already running when lazy init happens, so we can't use
-        # asyncio.run() or run_until_complete() directly. A separate thread gets its own loop.
-        import concurrent.futures
-        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-            executor.submit(asyncio.run, self._initialize_engines()).result()
+        self._initialized = False
         # Handle both integer and boolean string values for RAW_OPENAI_OUTPUT
         raw_output_env = os.getenv("RAW_OPENAI_OUTPUT", "1")
         if raw_output_env.lower() in ('true', 'false'):
             self.raw_openai_output = raw_output_env.lower() == 'true'
         else:
             self.raw_openai_output = bool(int(raw_output_env))
+
+    async def _ensure_initialized(self):
+        """Lazy async initialization - called on first request."""
+        if self._initialized:
+            return
+        await self._initialize_engines()
+        self._initialized = True
 
     def _load_lora_adapters(self):
         adapters = []
@@ -246,6 +248,7 @@ class OpenAIvLLMEngine(vLLMEngine):
         )
     
     async def generate(self, openai_request: JobInput):
+        await self._ensure_initialized()
         if openai_request.openai_route == "/v1/models":
             yield await self._handle_model_request()
         elif openai_request.openai_route in ["/v1/chat/completions", "/v1/completions"]:
