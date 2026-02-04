@@ -180,9 +180,12 @@ class OpenAIvLLMEngine(vLLMEngine):
         self.served_model_name = os.getenv("OPENAI_SERVED_MODEL_NAME_OVERRIDE") or self.engine_args.model
         self.response_role = os.getenv("OPENAI_RESPONSE_ROLE") or "assistant"
         self.lora_adapters = self._load_lora_adapters()
-        # Use get_event_loop instead of asyncio.run to avoid conflicts with RunPod's event loop
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(self._initialize_engines())
+        # Run async initialization in a separate thread to avoid RunPod event loop conflicts
+        # RunPod's event loop is already running when lazy init happens, so we can't use
+        # asyncio.run() or run_until_complete() directly. A separate thread gets its own loop.
+        import concurrent.futures
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+            executor.submit(asyncio.run, self._initialize_engines()).result()
         # Handle both integer and boolean string values for RAW_OPENAI_OUTPUT
         raw_output_env = os.getenv("RAW_OPENAI_OUTPUT", "1")
         if raw_output_env.lower() in ('true', 'false'):
