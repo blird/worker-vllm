@@ -26,7 +26,8 @@
       "WebSearch",
       "WebFetch(domain:raw.githubusercontent.com)",
       "WebFetch(domain:github.com)",
-      "Bash(\"C:/Program Files/GitHub CLI/gh.exe\" release create v1.2.0 --repo blird/worker-vllm --title \"v1.2.0\" --notes \"Upgrade to vLLM 0.15.0 with refactored import paths for new module structure\")"
+      "Bash(\"C:/Program Files/GitHub CLI/gh.exe\" release create v1.2.0 --repo blird/worker-vllm --title \"v1.2.0\" --notes \"Upgrade to vLLM 0.15.0 with refactored import paths for new module structure\")",
+      "Bash(\"C:/Program Files/GitHub CLI/gh.exe\" release create v1.2.1 --repo blird/worker-vllm --title \"v1.2.1\" --notes \"Fix: ErrorResponse now wraps ErrorInfo in vLLM 0.15.0\")"
     ]
   }
 }
