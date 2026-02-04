@@ -1,0 +1,9 @@
+{
+  "input": {
+    "prompt": "Hello, how are you?",
+    "sampling_params": {
+      "max_tokens": 100,
+      "temperature": 0.7
+    }
+  }
+}
