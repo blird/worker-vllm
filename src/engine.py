@@ -2,6 +2,8 @@ import os
 import logging
 import json
 import asyncio
+import nest_asyncio
+nest_asyncio.apply()
 
 from dotenv import load_dotenv
 from typing import AsyncGenerator, Optional
@@ -177,8 +179,7 @@ class OpenAIvLLMEngine(vLLMEngine):
         self.served_model_name = os.getenv("OPENAI_SERVED_MODEL_NAME_OVERRIDE") or self.engine_args.model
         self.response_role = os.getenv("OPENAI_RESPONSE_ROLE") or "assistant"
         self.lora_adapters = self._load_lora_adapters()
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(self._initialize_engines())
+        asyncio.run(self._initialize_engines())
         # Handle both integer and boolean string values for RAW_OPENAI_OUTPUT
         raw_output_env = os.getenv("RAW_OPENAI_OUTPUT", "1")
         if raw_output_env.lower() in ('true', 'false'):
