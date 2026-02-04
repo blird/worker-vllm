@@ -4,4 +4,4 @@ runpod.toml
 .env
 test/*
 vllm-base/vllm-*
-.DS_Store
+.DS_Storehf_cache/
